@@ -5,7 +5,8 @@ from utils.qr_generator import generate_qr
 import datetime, os, threading, time
 
 router = APIRouter()
-SERVER_BASE_URL = "http://10.153.161.199:8000"
+SERVER_BASE_URL = "YOUR_SERVER_BASE_URL"  # e.g. http://192.168.x.x:8000
+SITE_URL        = "YOUR_SITE_URL"         # e.g. https://yourname.github.io/apmas
 
 @router.get("/tickets/all")
 def get_all_tickets():
@@ -48,11 +49,10 @@ def verify_ticket(ticket_id: str, payload: VerifyPayload):
     if not data:
         raise HTTPException(status_code=404, detail="ไม่พบตั๋ว")
 
-    # อัปเดต ticket → status=verified (Pi5 จะฟัง Firebase แล้วตัดสินใจช่อง)
     ref.update({
         "plate_text_verified": payload.plate_text_verified,
         "province_verified":   None,
-        "slot_id":             "pending",   # Pi5 จะมาอัปเดต
+        "slot_id":             "pending",
         "status":              "verified",
     })
 
@@ -72,19 +72,16 @@ def assign_slot_from_pi5(ticket_id: str, slot_id: str):
     if not data:
         raise HTTPException(status_code=404, detail="ไม่พบตั๋ว")
 
-    # จอง slot ใน Firebase
     get_slot_ref(slot_id).update({
         "status":    "reserved",
         "ticket_id": ticket_id
     })
 
-    # สร้าง QR พร้อม slot_id ใน URL
-    qr_link     = f"https://jaomeow1.github.io/apmas/?ticket_id={ticket_id}&slot={slot_id}"
+    qr_link     = f"{SITE_URL}/?ticket_id={ticket_id}&slot={slot_id}"
     qr_path     = generate_qr(ticket_id, qr_link)
     qr_filename = os.path.basename(qr_path)
     qr_url      = f"{SERVER_BASE_URL}/images/{qr_filename}"
 
-    # อัปเดต ticket ด้วย slot_id + qr_url
     ref.update({
         "slot_id": slot_id,
         "qr_url":  qr_url
@@ -110,13 +107,9 @@ def checkout_ticket(ticket_id: str):
 
 
 # ── Firebase background listener — สร้าง QR เมื่อ Pi5 assign slot แล้ว ──
-_qr_created = set()   # ป้องกัน สร้าง QR ซ้ำ
+_qr_created = set()
 
 def _watch_slot_assigned():
-    """
-    Server รัน background thread นี้
-    ฟัง /tickets realtime → เมื่อ status=slot_assigned → สร้าง QR ทันที
-    """
     from database import get_tickets_ref, get_ticket_ref
     from utils.qr_generator import generate_qr
     import os
@@ -137,13 +130,10 @@ def _watch_slot_assigned():
                         plate   = t.get("plate_text_verified") or t.get("plate_text_raw") or ""
                         print(f"[Server] 📦 สร้าง QR ticket={tid} slot={slot_id}")
 
-                        # สร้าง QR
-                        qr_link = (f"https://jaomeow1.github.io/apmas/"
-                                   f"?ticket_id={tid}&slot={slot_id}")
-                        qr_path    = generate_qr(tid, qr_link)
-                        qr_url     = f"{SERVER_BASE_URL}/images/{os.path.basename(qr_path)}"
+                        qr_link = f"{SITE_URL}/?ticket_id={tid}&slot={slot_id}"
+                        qr_path = generate_qr(tid, qr_link)
+                        qr_url  = f"{SERVER_BASE_URL}/images/{os.path.basename(qr_path)}"
 
-                        # อัปเดต Firebase: qr_url + status=verified
                         get_ticket_ref(tid).update({
                             "qr_url": qr_url,
                             "status": "verified",
