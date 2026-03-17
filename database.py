@@ -1,8 +1,8 @@
 import firebase_admin
 from firebase_admin import credentials, db
 
-FIREBASE_CRED_PATH = "serviceAccountKey.json"
-FIREBASE_DB_URL    = "https://apmas-parking-default-rtdb.asia-southeast1.firebasedatabase.app"
+FIREBASE_CRED_PATH = "FIREBASE_KEY"
+FIREBASE_DB_URL    = "FIREBASE_URL"
 
 def init_firebase():
     try:
