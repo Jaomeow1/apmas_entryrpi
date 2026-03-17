@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <title>APMAS Slip Print</title>
-<!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <style>
@@ -93,31 +92,33 @@
   </div>
 
   <div class="contact">
-    ติดต่อเบอร์โทรศัพท์ : 098-459-4874
+    ติดต่อเบอร์โทรศัพท์ : YOUR_CONTACT_PHONE
   </div>
 </div>
 
 <script>
+// ── CONFIG ── (เติมค่าจริงที่นี่)
 const FIREBASE_CONFIG = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  databaseURL: "YOUR_DATABASE_URL",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
+  apiKey:            "YOUR_API_KEY",
+  authDomain:        "YOUR_PROJECT_ID.firebaseapp.com",
+  databaseURL:       "YOUR_DATABASE_URL",
+  projectId:         "YOUR_PROJECT_ID",
+  storageBucket:     "YOUR_PROJECT_ID.appspot.com",
   messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"           "1:806432177524:web:ee38d79999d7733af54021"
+  appId:             "YOUR_APP_ID"
 };
+const SITE_URL = "YOUR_SITE_URL"; // e.g. https://yourname.github.io/apmas
 
 firebase.initializeApp(FIREBASE_CONFIG);
 const db = firebase.database();
 
 // ── รับ params จาก URL ──
-const p     = new URLSearchParams(location.search);
-const tid   = p.get("ticket_id") || "";
-const plate = p.get("plate")     || "---";
-const date  = p.get("date")      || "---";
-const time  = p.get("time")      || "---";
-const slotParam = p.get("slot")  || "";   // slot_id ที่ admin.html ส่งมา
+const p         = new URLSearchParams(location.search);
+const tid       = p.get("ticket_id") || "";
+const plate     = p.get("plate")     || "---";
+const date      = p.get("date")      || "---";
+const time      = p.get("time")      || "---";
+const slotParam = p.get("slot")      || "";
 
 document.getElementById("slip-plate").textContent = plate;
 document.getElementById("slip-date").textContent  = date;
@@ -129,12 +130,11 @@ if (slotParam) {
 }
 
 // QR — embed slot ลงไปด้วยเพื่อให้ลูกค้าเห็นตำแหน่ง
-const qr_link = `https://jaomeow1.github.io/apmas/?ticket_id=${tid}&slot=${slotParam}`;
+const qr_link = `${SITE_URL}/?ticket_id=${tid}&slot=${slotParam}`;
 document.getElementById("slip-qr").src =
   `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qr_link)}`;
 
 // ── ดึง slot_id จาก Firebase realtime ──
-// จะอัปเดตทันทีเมื่อ Pi5 ยืนยันว่าจอดแล้ว
 let autoPrinted = false;
 
 if (tid) {
@@ -145,16 +145,14 @@ if (tid) {
     const slotId = t.slot_id;
     const slotEl = document.getElementById("slip-slot");
 
-    // แสดง slot_id ทันทีเมื่อ verified (ไม่ต้องรอ parked)
     if (slotId && slotId !== "Not assigned" && slotId !== "") {
-      slotEl.textContent = slotId;
+      slotEl.textContent    = slotId;
       slotEl.style.fontWeight = "700";
-      slotEl.style.color = "#111";
+      slotEl.style.color    = "#111";
     } else {
       slotEl.innerHTML = `<span class="loading-slot">กำลังจัดช่อง...</span>`;
     }
 
-    // auto print ทันทีที่ได้ slot (status=verified ก็พอ ไม่ต้องรอ parked)
     const isReady = (t.status === "verified" || t.status === "parked")
                     && slotId && slotId !== "Not assigned";
     if (p.get("autoprint") === "1" && isReady && !autoPrinted) {
