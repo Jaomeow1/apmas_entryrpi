@@ -3,23 +3,21 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from database import init_firebase
-from routers import entrance, tickets, slots 
+from routers import entrance, tickets, slots
 import os
-
 
 app = FastAPI(title="APMAS Parking API")
 
-# CORS — อนุญาตเฉพาะ GitHub Pages + localhost
+# CORS — เติม origins ที่อนุญาต
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "https://jaomeow1.github.io",
+        "YOUR_GITHUB_PAGES_URL",   # e.g. https://yourname.github.io
+        "YOUR_SERVER_URL",         # e.g. http://192.168.x.x
+        "YOUR_SERVER_URL_PORT",    # e.g. http://192.168.x.x:8000
         "http://localhost",
-        "http://127.0.0.1",
-        "http://10.153.161.199",
         "http://localhost:8000",
-        "http://192.168.137.221",
-        "http://192.168.137.221:8000",
+        "http://127.0.0.1",
         "null"
     ],
     allow_methods=["GET", "POST", "PATCH", "DELETE"],
@@ -39,7 +37,6 @@ app.include_router(slots.router,    prefix="/api")
 @app.on_event("startup")
 def startup():
     init_firebase()
-    # เริ่ม background thread ฟัง Firebase → สร้าง QR อัตโนมัติเมื่อ Pi5 assign slot
     from routers.tickets import start_slot_watcher
     start_slot_watcher()
     print("[Server] Ready")
