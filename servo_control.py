@@ -2,8 +2,8 @@ import httpx
 import asyncio
 
 # ── ตั้งค่า ──────────────────────────────────────────
-PI4_IP   = "xxxxxxxxxx"   # ← เปลี่ยนเป็น IP จริงของ Pi4
-PI4_PORT = 8001              # port ที่ Pi4 รับคำสั่ง (แยกจาก port Server)
+PI4_IP   = "YOUR_PI4_IP"     # e.g. 192.168.x.x
+PI4_PORT = 8001               # port ที่ Pi4 รับคำสั่ง (แยกจาก port Server)
 PI4_URL  = f"http://{PI4_IP}:{PI4_PORT}"
 # ─────────────────────────────────────────────────────
 
